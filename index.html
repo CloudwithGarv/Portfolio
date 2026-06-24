@@ -1848,31 +1848,30 @@ document.addEventListener('DOMContentLoaded', () => {
     audio.volume = 0.20; // Set comfortable low background volume
   }
   
-  // If user previously turned music off, don't autoplay
-  const musicPref = localStorage.getItem('music-enabled');
-  if (musicPref === 'false') {
-    musicInitiated = true; // prevent autoPlayMusic from triggering
-    return;
-  }
-  
   // Try to play immediately (if browser policy allows)
   if (audio) {
     audio.play()
       .then(() => {
         player.classList.add('playing');
         icon.textContent = '🔊';
-        localStorage.setItem('music-enabled', 'true');
         musicInitiated = true;
       })
       .catch(() => {
-        // Fallback: wait for first user interaction (click) to autoplay
+        // Fallback: wait for first user interaction (click/touch) to autoplay
         document.addEventListener('click', autoPlayMusic, { once: true });
+        document.addEventListener('touchstart', autoPlayMusic, { once: true });
       });
   }
 });
 
 function autoPlayMusic() {
   if (musicInitiated) return;
+  musicInitiated = true;
+  
+  // Clean up listeners
+  document.removeEventListener('click', autoPlayMusic);
+  document.removeEventListener('touchstart', autoPlayMusic);
+  
   const player = document.getElementById('music-player');
   const audio = document.getElementById('bg-music');
   const icon = document.getElementById('music-icon');
@@ -1882,11 +1881,9 @@ function autoPlayMusic() {
       .then(() => {
         player.classList.add('playing');
         icon.textContent = '🔊';
-        localStorage.setItem('music-enabled', 'true');
       })
       .catch(() => {});
   }
-  musicInitiated = true;
 }
 
 function toggleMusic() {
@@ -1894,8 +1891,9 @@ function toggleMusic() {
   const audio = document.getElementById('bg-music');
   const icon = document.getElementById('music-icon');
   
-  // Remove autoplay listener if they click button manually first
+  // Remove autoplay listeners if they click button manually first
   document.removeEventListener('click', autoPlayMusic);
+  document.removeEventListener('touchstart', autoPlayMusic);
   musicInitiated = true;
   
   if (audio.paused) {
@@ -1903,14 +1901,12 @@ function toggleMusic() {
       .then(() => {
         player.classList.add('playing');
         icon.textContent = '🔊';
-        localStorage.setItem('music-enabled', 'true');
       })
       .catch(err => console.log(err));
   } else {
     audio.pause();
     player.classList.remove('playing');
     icon.textContent = '🎵';
-    localStorage.setItem('music-enabled', 'false');
   }
 }
 </script>
